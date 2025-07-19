@@ -134,19 +134,9 @@ app.patch("/update-user", async (req, res) => {
 
 //profile
 
-app.get("/profile", async (req, res) => {
+app.get("/profile", userAuth, async (req, res) => {
   try {
-    const token = req.cookies.authToken;
-    console.log("Cookie received:", cookie);
-    if(!token) {
-      return res.status(401).send("Unauthorized");
-    }
-    const isTokenValid = jwt.verify(token, "DEV@TINDER$790");
-    console.log("Is token valid:", isTokenValid);
-    if (!isTokenValid) {
-      return res.status(401).send("Unauthorized");
-    }
-    const user= await User.findById(isTokenValid._id);
+    const user = req.user;
     if (!user) {
       return res.status(404).send("User not found");
     }
