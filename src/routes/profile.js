@@ -1,28 +1,30 @@
 const express = require("express");
 const User = require("../models/user");
 const userRouter = express.Router();
+const { userAuth } = require("../middlewares/auth");
 
-// get user details
-userRouter.get("/user", async (req, res) => {
+
+//profile
+userRouter.get("/profile/view", userAuth, async (req, res) => {
   try {
-    const user = await User.findOne({ _id: req.body.userId });
+    const user = req.user;
     if (!user) {
       return res.status(404).send("User not found");
     }
     res.status(200).send(user);
   } catch (error) {
-    console.log("Error fetching user:", error);
+    console.log("Error fetching profile:", );
     res.status(500).send(error.message);
   }
 });
 
 //update user details
-userRouter.patch("/update-user", async (req, res) => {
+userRouter.patch("/profile/edit", userAuth, async (req, res) => {
   const data = req.body;
-  const userId = req.body.userId;
+  // const userId = req.body.userId;
   try {
     const ALLOWED_FIELDS = [
-      "userId",
+      // "userId",
       "photoUrl",
       "gender",
       "firstName",
@@ -37,13 +39,15 @@ userRouter.patch("/update-user", async (req, res) => {
     if (!updateFields) {
       throw new Error("Invalid fields to update");
     }
-    const user = await User.findByIdAndUpdate({ _id: userId }, data, {
-      new: true,
-    });
-    if (!user) {
-      return res.status(404).send("User not found");
-    }
-    res.status(200).send(user);
+
+    console.log("Updating user with data:", data);
+    console.log("User ID:", req.user._id);
+    const updatedData = await User.findOneAndUpdate(
+      { _id: req.user._id },
+      { $set: data },
+      { new: true }         
+    );
+    res.status(200).send("User updated successfully");
   } catch (error) {
     console.log("Error updating user:", error);
     res.status(500).send(error.message);

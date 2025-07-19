@@ -1,4 +1,4 @@
-const express= require("express");
+const express = require("express");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 const { userSchema, loginSchema } = require("../utils/validatations");
@@ -60,6 +60,11 @@ authRouter.post("/login", async (req, res) => {
     console.log("Error during login:", error);
     res.status(500).send(error.message);
   }
+});
+
+authRouter.post("/logout", (req, res) => {
+  res.cookie("authToken", null, { expires: new Date(Date.now()) });
+  res.send("Logout successful");
 });
 
 module.exports = authRouter;
