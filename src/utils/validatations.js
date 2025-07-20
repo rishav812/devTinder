@@ -20,7 +20,14 @@ const loginSchema = Joi.object({
   password: Joi.string().min(6).required(),
 });
 
+const connectionSchema = Joi.object({
+    fromUserId:Joi.any().required(),
+    toUserId:Joi.string().required(),
+    status:Joi.string().valid("ignored", "interested").required()
+})
+
 module.exports = {
   userSchema,
-  loginSchema
+  loginSchema,
+  connectionSchema
 };
