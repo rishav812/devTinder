@@ -24,10 +24,16 @@ const connectionSchema = Joi.object({
     fromUserId:Joi.any().required(),
     toUserId:Joi.string().required(),
     status:Joi.string().valid("ignored", "interested").required()
-})
+});
+
+const requestViewSchema = Joi.object({
+    requestId:Joi.any().required(),
+    status:Joi.string().valid("accepted", "rejected").required()
+});
 
 module.exports = {
   userSchema,
   loginSchema,
-  connectionSchema
+  connectionSchema,
+  requestViewSchema
 };
