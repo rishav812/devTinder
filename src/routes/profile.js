@@ -3,6 +3,7 @@ const User = require("../models/user");
 const userRouter = express.Router();
 const { userAuth } = require("../middlewares/auth");
 const ConnectionRequest = require("../models/connectionRequest");
+const { loginSchema } = require("../utils/validatations");
 
 //profile
 userRouter.get("/profile/view", userAuth, async (req, res) => {
@@ -78,28 +79,63 @@ userRouter.get("/user/connections", userAuth, async (req, res) => {
     const loggedInUserId = req.user._id;
     const connections = await ConnectionRequest.find({
       $or: [{ fromUserId: loggedInUserId }, { toUserId: loggedInUserId }],
-    }).populate("toUserId", "firstName lastName age gender about skills");
+    })
+      .populate("toUserId", "firstName lastName age gender about skills")
+      .populate("fromUserId", "firstName lastName age gender about skills");
     if (!connections || connections.length === 0) {
       return res.status(404).send("No sent connection found");
     }
     console.log("Fetched connections:", connections);
-    // const result= connections.map((connection)=>)
+    const result = connections.map((connection) => {
+      if (connection.fromUserId._id.toString() === loggedInUserId.toString()) {
+        return connection.toUserId;
+      } else {
+        return connection.fromUserId;
+      }
+    });
+    console.log("Resulting connections:", result);
     res
       .status(200)
-      .json({ message: "Sent requests successfully fetched", connections });
+      .json({ message: "Sent requests successfully fetched", result });
   } catch (error) {
     res.status(500).send(error.message);
   }
 });
 
-userRouter.get("/feed", async (req, res) => {
+userRouter.get("/user/feed", userAuth, async (req, res) => {
   try {
-    const users = await User.find();
-    console.log("Fetched users:", users);
-    if (!users || users.length === 0) {
-      return res.status(404).send("No users found");
-    }
-    res.status(200).send(users);
+    const loggedInUserId = req.user._id;
+    const page = req.query.page ? parseInt(req.query.page) : 1;
+    const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+    const skip = (page - 1) * limit;
+    const connections = await ConnectionRequest.find({
+      $or: [
+        { fromUserId: loggedInUserId._id },
+        { toUserId: loggedInUserId._id },
+      ],
+    }).select("fromUserId toUserId");
+    console.log("Fetched users:", connections);
+
+    const hideUserFeedIds = new Set();
+    connections.forEach((connection) => {
+      hideUserFeedIds.add(connection.fromUserId.toString());
+      hideUserFeedIds.add(connection.toUserId.toString());
+    });
+    console.log("Hide user feed IDs:", hideUserFeedIds);
+    const users = await User.find({
+      $and: [
+        { _id: { $nin: Array.from(hideUserFeedIds) } },
+        { _id: { $ne: loggedInUserId } },
+      ],
+    })
+      .select("_id firstName lastName age skills photoUrl about")
+      .skip(skip)
+      .limit(limit);
+
+    res.status(200).json({
+      message: "Users fetched successfully",
+      users,
+    });
   } catch (error) {
     console.log("Error fetching users:", error);
     res.status(500).send(error.message);
