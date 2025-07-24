@@ -16,7 +16,7 @@ const userAuth = async (req, res, next) => {
   try {
     const token = req.cookies.authToken;
     if (!token) {
-      throw new Error("Invalid token");
+      return res.status(401).send("Unauthorized User");
     }
     console.log("User auth token:", token);
     const isAuthorized = jwt.verify(token, "DEV@TINDER$790");
